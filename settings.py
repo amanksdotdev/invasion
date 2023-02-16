@@ -18,8 +18,15 @@ class Settings:
         # Ship settings
         self.ship_speed = 5
 
-    def update_screen(self, width, height):
-        """Update the default dimension of screen"""
+        # Bullet settings
+        self.bullet_speed = 2.0
+        self.bullet_width = 3
+        self.bullet_height = 15
+        self.bullet_color = (63, 94, 249) # lazer blue color 
+        self.bullets_allowed = 3
+
+    def update_dimensions(self, width: int, height: int):
+        """Update the default dimensions of screen"""
         self.screen_width = width
         self.screen_height = height
 
