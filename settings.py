@@ -23,7 +23,7 @@ class Settings:
         self.bullet_width = 3
         self.bullet_height = 15
         self.bullet_color = (63, 94, 249)  # lazer blue color
-        self.bullets_allowed = float('inf')
+        self.bullets_allowed = 10
 
         # Alien settings
         self.fleet_drop_speed = 10
