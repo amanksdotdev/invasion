@@ -1,10 +1,13 @@
 import sys
 from time import sleep
+from pathlib import Path
+import json
 
 import pygame
 
 from settings import Settings
 from game_stats import GameStats
+from scoreboard import Scoreboard
 from button import Button
 from ship import Ship
 from bullet import Bullet
@@ -31,8 +34,9 @@ class Invasion:
         self.settings.update_dimensions(screen_width, screen_height)
         pygame.display.set_caption('Invasion')
 
-        # Create an instance to store game statistics
+        # Create an instance to store game statistics and create a scoreboard
         self.stats = GameStats(self)
+        self.sb = Scoreboard(self)
 
         self.ship = Ship(self)
         self.bullets = pygame.sprite.Group()
@@ -63,11 +67,16 @@ class Invasion:
             # Control the frame rate
             self.clock.tick(60)
 
+    def quit_game(self):
+        path = Path(self.settings.high_score_path)
+        path.write_text(json.dumps(self.stats.high_score))
+        sys.exit()
+
     def _check_events(self) -> None:
         """Respond to keypress and mouse events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                sys.exit()
+                self.quit_game()
             elif event.type == pygame.KEYDOWN:
                 self._check_keydown_events(event)
             elif event.type == pygame.KEYUP:
@@ -82,8 +91,12 @@ class Invasion:
             self.ship.moving_right = True
         elif event.key == pygame.K_LEFT:
             self.ship.moving_left = True
+        elif event.key == pygame.K_UP:
+            self.ship.moving_up = True
+        elif event.key == pygame.K_DOWN:
+            self.ship.moving_down = True
         elif event.key == pygame.K_q:
-            sys.exit()
+            self.quit_game()
         elif event.key == pygame.K_SPACE:
             self._fire_bullet()
         elif event.key == pygame.K_p and not self.game_active:
@@ -95,6 +108,10 @@ class Invasion:
             self.ship.moving_right = False
         elif event.key == pygame.K_LEFT:
             self.ship.moving_left = False
+        elif event.key == pygame.K_UP:
+            self.ship.moving_up = False
+        elif event.key == pygame.K_DOWN:
+            self.ship.moving_down = False
 
     def _check_play_button(self, mouse_pos: tuple[int, int]):
         """Start a new game when the player clicks play"""
@@ -103,7 +120,11 @@ class Invasion:
             self._start_game()
 
     def _start_game(self):
+        self.settings.initialize_dynamic_settings()
         self.stats.reset_stats()
+        self.sb.prep_score()
+        self.sb.prep_level()
+        self.sb.prep_ships()
         self.game_active = True
 
         # Get rid of any remaining bullets and aliens
@@ -138,12 +159,24 @@ class Invasion:
     def _check_bullet_alien_collisions(self):
         """Respond to bullet-alien collisions"""
         # Remove any bullet and alien that have collided
-        pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
+        collisions = pygame.sprite.groupcollide(
+            self.bullets, self.aliens, True, True)
+
+        if collisions:
+            for aliens in collisions.values():
+                self.stats.score += self.settings.alien_points * len(aliens)
+            self.sb.prep_score()
+            self.sb.check_high_score()
 
         if not self.aliens:
             # Destroy existing bullets and create new fleet
             self.bullets.empty()
             self._create_fleet()
+            self.settings.increase_speed()
+
+            # Increase level
+            self.stats.level += 1
+            self.sb.prep_level()
 
     def _update_aliens(self):
         """Check if the fleet is at an edge, then update positions"""
@@ -162,6 +195,7 @@ class Invasion:
         if self.stats.ship_left > 0:
             # Decrement ship_left
             self.stats.ship_left -= 1
+            self.sb.prep_ships()
 
             # Get rid of any remaining bullets and aliens
             self.bullets.empty()
@@ -233,6 +267,8 @@ class Invasion:
             bullet.draw_bullet()
         self.ship.draw()
         self.aliens.draw(self.screen)
+
+        self.sb.show_score()
 
         if not self.game_active:
             self.play_button.draw_button()

@@ -1,11 +1,13 @@
 import pygame
+from pygame.sprite import Sprite
 
 
-class Ship:
+class Ship(Sprite):
     """A class to manage the ship"""
 
     def __init__(self, igame) -> None:
         """Initialize the ship and set its starting position."""
+        super().__init__()
         self.screen = igame.screen
         self.screen_rect = igame.screen.get_rect()
 
@@ -20,12 +22,15 @@ class Ship:
         self.rect.midbottom = self.screen_rect.midbottom
         self.rect.y = self.rect.y - 20  # Offset from touching the bottom
 
-        # Store a float for the ships's exact horizontal position
+        # Store a float for the ships's exact position
         self.x = float(self.rect.x)
+        self.y = float(self.rect.y)
 
         # Movement flags
         self.moving_right = False
         self.moving_left = False
+        self.moving_up = False
+        self.moving_down = False
 
     def update(self):
         """Update the ship's position based on movement flag."""
@@ -33,9 +38,14 @@ class Ship:
             self.x += self.settings.ship_speed
         if self.moving_left and self.rect.left > 0:
             self.x -= self.settings.ship_speed
+        if self.moving_up and self.rect.top > 0:
+            self.y -= self.settings.ship_speed
+        if self.moving_down and self.rect.bottom < self.screen_rect.bottom:
+            self.y += self.settings.ship_speed
 
         # Update the rect object from self.x
         self.rect.x = self.x
+        self.rect.y = self.y
 
     def draw(self):
         """Draw the ship at its current location"""
@@ -45,3 +55,4 @@ class Ship:
         """Center the ship on the screen"""
         self.rect.midbottom = self.screen_rect.midbottom
         self.x = float(self.rect.x)
+        self.y = float(self.rect.y)
